@@ -10,5 +10,8 @@ namespace Config {
     extern bool SkipLandingCutscene;
     extern bool SkipIntroToMainMenu;
     extern bool SkipLoadingScreenDelay;
+    extern bool RestoreCommandLine;
+    extern bool Achievements;
+    extern bool AchievementsDebug;
     void Load();
 }

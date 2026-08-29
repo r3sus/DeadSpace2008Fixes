@@ -12,6 +12,8 @@
 #include "Utils.h"
 #include "InputHooks.h"
 #include "Config.h"
+#include "CommandLineRestore.h"
+#include "Achievements.h"
 
 //Globals
 SetSamplerState_t oSetSamplerState = nullptr;
@@ -355,7 +357,12 @@ void InitialiseNetworkHooks()
 
 HRESULT APIENTRY hkEndScene(LPDIRECT3DDEVICE9 pDevice)
 {
-    if (g_TargetFPS > 0)
+    static volatile unsigned long callCount = 0;
+    unsigned long n = ++callCount;
+    if (n <= 3 || (n % 300) == 0)
+        DEBUG_LOG("EndScene hook called (#%lu) pDevice=%p", n, (void*)pDevice);
+
+    if (Config::SafeFPSCap && g_TargetFPS > 0)
     {
         LARGE_INTEGER currentTime;
         LONGLONG targetTicksPerFrame = g_TimerFrequency.QuadPart / g_TargetFPS;
@@ -387,6 +394,7 @@ HRESULT APIENTRY hkEndScene(LPDIRECT3DDEVICE9 pDevice)
             g_LastFrameTime = currentTime;
         }
     }
+    Achievements::OnPresent(pDevice);
     return oEndScene(pDevice);
 }
 
@@ -684,6 +692,7 @@ DWORD WINAPI MainThread(LPVOID)
                     DEBUG_LOG("Patched loading screen tip cycle hold to %.1fs", g_LoadingTipCycleHold);
             }
         }
+        }
 
         QueryPerformanceFrequency(&g_TimerFrequency);
         QueryPerformanceCounter(&g_LastFrameTime);
@@ -720,23 +729,25 @@ DWORD WINAPI MainThread(LPVOID)
             MH_CreateHook(pSetSamplerStateTarget, &hkSetSamplerState, reinterpret_cast<LPVOID*>(&oSetSamplerState));
             MH_EnableHook(pSetSamplerStateTarget);
 
-            if (Config::SafeFPSCap)
-            {
-                void* pEndSceneTarget = pVTable[42];
-                MH_CreateHook(pEndSceneTarget, &hkEndScene, reinterpret_cast<LPVOID*>(&oEndScene));
-                MH_EnableHook(pEndSceneTarget);
-            }
+            // EndScene must be hooked regardless of the FPS cap so the
+            // achievements toast overlay can draw every frame; the FPS cap
+            // itself is enforced inside hkEndScene when SafeFPSCap is on.
+            void* pEndSceneTarget = pVTable[42];
+            MH_CreateHook(pEndSceneTarget, &hkEndScene, reinterpret_cast<LPVOID*>(&oEndScene));
+            MH_EnableHook(pEndSceneTarget);
 
             //cleanup
             pDummyDevice->Release();
         }
 
+
         pD3D->Release();
 
-        return 0;
+        // Install the achievement tracker hook now that MinHook is initialized
+        // (InitialiseInputHooks/MH_Initialize ran earlier in this thread).
+        Achievements::Initialise();
 
-    }
-    return 0;
+        return 0;
 }
 
 void ApplyStartupVSyncPatch() //this has to run really early or it's broken
@@ -778,6 +789,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             SetProcessAffinityMask(GetCurrentProcess(), affinityMask);
         }
         Config::Load(); //really dislike doing it like this, could definitely cause issues.
+
+        // Apply the command-line restore hook as early as possible.
+        // The command-line restore must patch the engine's boot call site before
+        // sub_414A60 runs during startup, otherwise cmd.txt/argv are consumed late.
+        CommandLineRestore::Initialise();
+
         if (Config::FixVSync)
         {
             ApplyStartupVSyncPatch();

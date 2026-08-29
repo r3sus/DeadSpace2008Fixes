@@ -160,6 +160,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Config.h" />
+    <ClInclude Include="Achievements.h" />
+    <ClInclude Include="CommandLineRestore.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="include\MinHook\buffer.h" />
     <ClInclude Include="include\MinHook\hde32.h" />
@@ -175,6 +177,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp" />
+    <ClCompile Include="Achievements.cpp" />
+    <ClCompile Include="CommandLineRestore.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="include\MinHook\buffer.c" />
     <ClCompile Include="include\MinHook\hde32.c" />

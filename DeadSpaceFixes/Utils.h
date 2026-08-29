@@ -1,8 +1,9 @@
 #pragma once
 #include <Windows.h>
+#include <cstddef>
 
 #ifdef _DEBUG
-#define DEBUG_LOG(fmt, ...) printf("[DeadSpaceFixes] " fmt "\n", ##__VA_ARGS__)
+#define DEBUG_LOG(fmt, ...) Utils::LogDebug(fmt, ##__VA_ARGS__)
 #else
 //#define DEBUG_LOG(fmt, ...) 
 #define DEBUG_LOG(fmt, ...) ((void)0) //keeps this a valid non-empty statement, so `if (x) DEBUG_LOG(...);` doesn't trigger C4390 in release builds.
@@ -10,6 +11,7 @@
 
 namespace Utils {
 	void InitialiseConsole();
+	void LogDebug(const char* fmt, ...);
 
 	uintptr_t FindPattern(HMODULE hModule, const char* signature);
 

@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <emmintrin.h>
 #include <intrin.h>
+#include <cstdio>
+#include <cstdarg>
 
 #include "Utils.h"
 
@@ -16,6 +18,28 @@ namespace Utils {
         FILE* fDummy;
         freopen_s(&fDummy, "CONOUT$", "w", stdout);
         freopen_s(&fDummy, "CONOUT$", "w", stderr);
+    }
+
+    void LogDebug(const char* fmt, ...)
+    {
+        char line[2048];
+        SYSTEMTIME st;
+        GetLocalTime(&st);
+
+        va_list ap;
+        va_start(ap, fmt);
+        vsnprintf_s(line, _TRUNCATE, fmt, ap);
+        va_end(ap);
+
+        FILE* f = nullptr;
+        fopen_s(&f, "DeadSpaceFixes.debug.log", "a");
+        if (f)
+        {
+            fprintf(f, "[%02d:%02d:%02d.%03d] %s\n", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds, line);
+            fclose(f);
+        }
+
+        printf("[DeadSpaceFixes] %s\n", line);
     }
 
     //Converts a signature string like "8B ? 50 F3 0F" into a byte array where -1 means

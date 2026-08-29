@@ -12,6 +12,9 @@ namespace Config {
 	bool SkipLandingCutscene = false;
 	bool SkipIntroToMainMenu = false;
 	bool SkipLoadingScreenDelay = false;
+	bool RestoreCommandLine = true;
+	bool Achievements = true;
+	bool AchievementsDebug = false;
 
 	//AI-written config handling: generates DeadSpaceFixes.ini on first launch
 	//(loading-screen-delay option below reverse engineered by AI, see dllmain.cpp).
@@ -27,7 +30,7 @@ namespace Config {
 		// Bump this whenever the [Settings] key set changes. A stale config file
 		// is then regenerated with the canonical keys instead of silently
 		// dropping options the current build doesn't know about.
-		constexpr int kConfigVersion = 2;
+		constexpr int kConfigVersion = 3;
 
 		// Every known option is declared here once and used everywhere below,
 		// so the default, the help text and the read/write logic can't drift
@@ -48,6 +51,9 @@ namespace Config {
 			{ "SkipIshimuraLandingCutscene", 0, "Skip the Ishimura landing cutscene on new game (plus) start" },
 			{ "SkipIntroToMainMenu", 0, "Skip the boot intro and launch main menu immediately" },
 			{ "SkipLoadingScreenDelay", 0, "Skip the artificial wait on the loading screen once the level is ready" },
+			{ "RestoreCommandLine", 1, "Re-enable the game's cut command-line handling (real argv + cmd.txt)" },
+			{ "Achievements", 1, "Enable in-game achievement tracking and toast overlay" },
+			{ "AchievementsDebug", 0, "Show the achievements debug panel with live counters" },
 		};
 
 		// Note: the game's config lives next to the .exe (the DLL runs from the
@@ -87,7 +93,7 @@ namespace Config {
 		}
 
 		// Self-heal: if a key is absent from an existing .ini, WritePrivateProfile
-		// returns the default string we pass in — a sentinel ("\x01") that a real
+		// returns the default string we pass in �?" a sentinel ("\x01") that a real
 		// value can never equal. Only when the sentinel comes back do we know the
 		// key is genuinely missing and add it with its default.
 		void EnsureKeyPresent(const std::string& path, const Entry& e) {
@@ -121,5 +127,8 @@ namespace Config {
 		SkipLandingCutscene = GetPrivateProfileIntA(kSettingsSection, "SkipIshimuraLandingCutscene", 0, configPath.c_str()) != 0;
 		SkipIntroToMainMenu = GetPrivateProfileIntA(kSettingsSection, "SkipIntroToMainMenu", 0, configPath.c_str()) != 0;
 		SkipLoadingScreenDelay = GetPrivateProfileIntA(kSettingsSection, "SkipLoadingScreenDelay", 0, configPath.c_str()) != 0;
+		RestoreCommandLine = GetPrivateProfileIntA(kSettingsSection, "RestoreCommandLine", 1, configPath.c_str()) != 0;
+		Achievements = GetPrivateProfileIntA(kSettingsSection, "Achievements", 1, configPath.c_str()) != 0;
+		AchievementsDebug = GetPrivateProfileIntA(kSettingsSection, "AchievementsDebug", 0, configPath.c_str()) != 0;
 	}
 }
